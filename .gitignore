@@ -30,3 +30,14 @@
 *.exe
 *.out
 *.app
+
+# Other build artifacts
+*.bin
+*.dmp
+*.elf
+*.hex
+*.list
+*.log
+*.lst
+*.map
+build
