@@ -1,5 +1,7 @@
 #include <array>
 #include <mutex>
+#include <string>
+#include <cstring>
 
 // @TODO fix include dirs w/ local Makefile
 #include "../UartChSubsys.h"
@@ -151,6 +153,11 @@ static THD_FUNCTION(uart1RxThreadFunc, eventQueue) {
 
 /**
  * UART RX subsystem thread
+ * @TODO Remove the UART's subsystem thread entirely and see if anything breaks.
+ *       Seems as though UART RX could run exclusively on chibios callbacks.
+ *       Although, only its workspace is unnecessary overhead b/c the thread
+ *       itself goes into a permanent slumber after UART RX start receive is
+ *       called
  */
 static THD_WORKING_AREA(uartRxThreadFuncWa, 128);
 static THD_FUNCTION(uartRxThreadFunc, uartChSubsys) {
@@ -190,26 +197,19 @@ int main() {
    */
   EventQueue fsmEventQueue = EventQueue();
 
-  // Start UART driver 1 (make sure before starting UART RX thread)
-  //uartStart(&UARTD3, &uart_cfg_1);
-  //uartStopSend(&UARTD3);
-  //char txPacketArray[6] = {'S','T','A','R','T', ' '};
-  //uartStartSend(&UARTD3, 6, txPacketArray);
-
   UartChSubsys uartChSubsys = UartChSubsys(fsmEventQueue);
 
-  /*
-   * Create threads (many of which are driving subsystems)
-   */
-  //// thread names necessary for signaling between threads
-  //uart1RxThread = chThdCreateStatic(uart1RxThreadFuncWa,
-  //    sizeof(uart1RxThreadFuncWa), NORMALPRIO, uart1RxThreadFunc,
-  //    &fsmEventQueue);
+  // create threads to drive subsystems
   chThdCreateStatic(uartRxThreadFuncWa,
       sizeof(uartRxThreadFuncWa), NORMALPRIO, uartRxThreadFunc,
       &uartChSubsys);
 
   uartChSubsys.addInterface(UartInterface::kD3);
+
+  // test async UART transmit
+  uartChSubsys.send("Valid message\n");
+  uartChSubsys.send("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+                    "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIInvalid message!!!\n");
 
   // Indicate startup - blink then stay on
   for (uint8_t i = 0; i < 5; i++) {
@@ -222,11 +222,6 @@ int main() {
   palClearPad(STARTUP_LED_PORT, STARTUP_LED_PIN);
   chThdSleepMilliseconds(300);
 
-  char txPacketArray[6] = {'A','B','C','D','E', ' '};
-  char txPacketArray2[6] = {'F','G','H','I','J', ' '};
-  uartChSubsys.send(txPacketArray, 6);
-  uartChSubsys.send(txPacketArray2, 6);
-
   while (1) {
     // always deplete the queue to help ensure that events are
     // processed faster than they're generated
@@ -234,13 +229,8 @@ int main() {
       Event e = fsmEventQueue.pop();
 
       if (e.type() == Event::Type::kUartRx) {
-        //palTogglePad(STARTUP_LED_PORT, STARTUP_LED_PIN);
-        uint8_t byteVal = e.getByte();
-        //uartStopSend(&UARTD3);
-        //uartStartSend(&UARTD3, 1, txPacketArray2);
-        char txPacketArray2[1];
-        txPacketArray2[0] = (char)byteVal;
-        uartChSubsys.send(txPacketArray2, 1);
+        // send received byte back to source
+        uartChSubsys.send((char)e.getByte());
       }
     }
 

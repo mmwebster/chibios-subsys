@@ -58,6 +58,16 @@ class UartChSubsys {
    */
   void addInterface(UartInterface ui);
 
+  /*
+   * @brief wrapper for send(char*,uint16) that takes a char
+   */
+  void send(char byte);
+
+  /**
+   * @brief C++ style wrapper for send(char*, uint16_t)
+   */
+  void send(std::string str);
+
   /**
    * @brief Queue a TX UART Frame for async transmission
    * @note The contents of str is immediately copied to memory
@@ -68,7 +78,7 @@ class UartChSubsys {
    * TODO: Add interface "ui" to send params to specify which
    *       interface
    */
-  void send(char * str, uint16_t len);
+  void send(const char * str, uint16_t len);
 
   /**
    * @brief Inf loop that MUST be called within staticly created thread

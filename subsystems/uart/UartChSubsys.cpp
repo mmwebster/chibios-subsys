@@ -77,12 +77,29 @@ void UartChSubsys::addInterface(UartInterface ui) {
 }
 
 /*
- * TODO: Consider implementing a faster (but less flexible) version,
-         with less impact on the calling thread, that requires the
-         calling thread to "permanently" allocate mem for the passed
-         str
+ * @brief wrapper for send(char*,uint16) that takes a char
  */
-void UartChSubsys::send(char * str, uint16_t len) {
+void UartChSubsys::send(char byte) {
+  send(&byte, 1);
+}
+
+/*
+ * @brief wrapper for send(char*,uint16) that takes a std::string
+ */
+void UartChSubsys::send(std::string str) {
+  if (str.length() < kMaxMsgLen) {
+    send(str.c_str(), str.length());
+  } else {
+    std::string errorMsg = "\n*UART SubSystem Error: Message exceeds 100"
+                           " character limit*\n";
+    send(errorMsg.c_str(), errorMsg.length());
+  }
+}
+
+/**
+ * @TODO optimize with DMA and/or more efficient copies
+ */
+void UartChSubsys::send(const char * str, uint16_t len) {
   // start data transmit if interface is ready
   if (m_d3IsReady) {
     m_d3IsReady = false;
@@ -97,6 +114,7 @@ void UartChSubsys::send(char * str, uint16_t len) {
     //       certainly effect timing
     // otherwise, queue for later
     std::lock_guard<chibios_rt::Mutex> txQueueGuard(m_d3TxQueueMut);
+    // push every byte of the string onto the queue
     for (uint32_t i = 0; i < len; i++) {
       // push byte
       m_d3TxQueue.PushBack(*(str + i));
@@ -114,7 +132,7 @@ void UartChSubsys::runRxThread() {
   uartStopReceive(m_uartp);
   uartStartReceive(m_uartp, 1, m_rxBuffer);
 
-  // sleep forever
+  // sleep forever, let callbacks take the wheel
   chThdSleepMilliseconds(1000*60*60*24);
 }
 
