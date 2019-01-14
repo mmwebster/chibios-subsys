@@ -16,7 +16,7 @@
  * @TODO Remove the UART's subsystem thread entirely and see if anything breaks.
  *       Seems as though UART RX could run exclusively on chibios callbacks.
  *       Although, only its workspace is unnecessary overhead b/c the thread
- *       itself goes into a permanent slumber after UART RX start receive is
+ *       itself goes into a permanent slumber after UART RX startReceive is
  *       called
  */
 static THD_WORKING_AREA(uartRxThreadFuncWa, 128);
