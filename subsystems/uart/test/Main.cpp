@@ -20,11 +20,34 @@
  *       called
  */
 static THD_WORKING_AREA(uartRxThreadFuncWa, 128);
-static THD_FUNCTION(uartRxThreadFunc, uart) {
+static THD_FUNCTION(uartRxThreadFunc, arg) {
   chRegSetThreadName("UART RX");
-  static_cast<UartChSubsys*>(uart)->runRxThread();
+  static_cast<UartChSubsys*>(arg)->runRxThread();
 }
 
+static THD_WORKING_AREA(timer1Wa, 128);
+static THD_FUNCTION(timer1Func, arg) {
+  chRegSetThreadName("Timer 1");
+
+  UartChSubsys* uart = static_cast<UartChSubsys*>(arg);
+
+  while (true) {
+    uart->send("Timer 1 still alive...\n");
+    chThdSleepMilliseconds(500);
+  }
+}
+
+static THD_WORKING_AREA(timer2Wa, 128);
+static THD_FUNCTION(timer2Func, arg) {
+  chRegSetThreadName("Timer 2");
+
+  UartChSubsys* uart = static_cast<UartChSubsys*>(arg);
+
+  while (true) {
+    uart->send("Timer 2 still alive...\n");
+    chThdSleepMilliseconds(2000);
+  }
+}
 
 int main() {
   /*
@@ -55,9 +78,15 @@ int main() {
 
   UartChSubsys uart = UartChSubsys(fsmEventQueue);
 
-  // create threads to drive subsystems
+  // create thread to drive subsystems
   chThdCreateStatic(uartRxThreadFuncWa, sizeof(uartRxThreadFuncWa), NORMALPRIO,
       uartRxThreadFunc, &uart);
+  // create some timer threads to test mult-thread access (note that at
+  // high-frequency and serial throughput these should produce race conditions)
+  chThdCreateStatic(timer1Wa, sizeof(timer1Wa), NORMALPRIO,
+      timer1Func, &uart);
+  chThdCreateStatic(timer2Wa, sizeof(timer2Wa), NORMALPRIO,
+      timer2Func, &uart);
 
   uart.addInterface(UartInterface::kD3);
 
