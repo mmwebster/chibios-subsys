@@ -20,9 +20,9 @@
  *       called
  */
 static THD_WORKING_AREA(uartRxThreadFuncWa, 128);
-static THD_FUNCTION(uartRxThreadFunc, uartChSubsys) {
+static THD_FUNCTION(uartRxThreadFunc, uart) {
   chRegSetThreadName("UART RX");
-  static_cast<UartChSubsys*>(uartChSubsys)->runRxThread();
+  static_cast<UartChSubsys*>(uart)->runRxThread();
 }
 
 
@@ -53,23 +53,22 @@ int main() {
 
   EventQueue fsmEventQueue = EventQueue();
 
-  UartChSubsys uartChSubsys = UartChSubsys(fsmEventQueue);
+  UartChSubsys uart = UartChSubsys(fsmEventQueue);
 
   // create threads to drive subsystems
-  chThdCreateStatic(uartRxThreadFuncWa,
-      sizeof(uartRxThreadFuncWa), NORMALPRIO, uartRxThreadFunc,
-      &uartChSubsys);
+  chThdCreateStatic(uartRxThreadFuncWa, sizeof(uartRxThreadFuncWa), NORMALPRIO,
+      uartRxThreadFunc, &uart);
 
-  uartChSubsys.addInterface(UartInterface::kD3);
+  uart.addInterface(UartInterface::kD3);
 
   // test async UART transmit
-  uartChSubsys.send("Valid message\n");
-  uartChSubsys.send("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
-                    "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIInvalid message!!!\n");
+  uart.send("Valid message\n");
+  uart.send("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
+            "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIInvalid message!!!\n");
 
   // try sending a float
   constexpr float my_float = 314.5594;
-  uartChSubsys.send("Float value is: " + UartChSubsys::to_string(my_float)
+  uart.send("Float value is: " + UartChSubsys::to_string(my_float)
       + "\n\n");
 
   // Indicate startup - blink then stay on
@@ -92,7 +91,7 @@ int main() {
 
       if (e.type() == Event::Type::kUartRx) {
         // send received byte back to source (test throughput)
-        uartChSubsys.send((char)e.getByte());
+        uart.send((char)e.getByte());
       }
     }
 
