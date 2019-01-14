@@ -67,6 +67,11 @@ int main() {
   uartChSubsys.send("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
                     "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIInvalid message!!!\n");
 
+  // try sending a float
+  constexpr float my_float = 314.5594;
+  uartChSubsys.send("Float value is: " + UartChSubsys::to_string(my_float)
+      + "\n\n");
+
   // Indicate startup - blink then stay on
   for (uint8_t i = 0; i < 5; i++) {
     palSetPad(STARTUP_LED_PORT, STARTUP_LED_PIN);
@@ -84,8 +89,9 @@ int main() {
     while (fsmEventQueue.size() > 0) {
       Event e = fsmEventQueue.pop();
 
+
       if (e.type() == Event::Type::kUartRx) {
-        // send received byte back to source
+        // send received byte back to source (test throughput)
         uartChSubsys.send((char)e.getByte());
       }
     }

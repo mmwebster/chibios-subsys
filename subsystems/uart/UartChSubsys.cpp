@@ -76,12 +76,29 @@ void UartChSubsys::addInterface(UartInterface ui) {
   uartStart(m_uartp, &m_uartConfig);
 }
 
+/**
+ * @brief Convert a float to a string
+ */
+std::string UartChSubsys::to_string(float num) {
+  int num_int = static_cast<int>(num);
+  return std::to_string(num_int) + std::string(".X");
+}
+
 /*
  * @brief wrapper for send(char*,uint16) that takes a char
  */
 void UartChSubsys::send(char byte) {
   send(&byte, 1);
 }
+
+void UartChSubsys::send(float num) {
+  send(UartChSubsys::to_string(num));
+}
+
+void UartChSubsys::send(int num) {
+  send(std::to_string(num));
+}
+
 
 /*
  * @brief wrapper for send(char*,uint16) that takes a std::string
@@ -90,9 +107,25 @@ void UartChSubsys::send(std::string str) {
   if (str.length() < kMaxMsgLen) {
     send(str.c_str(), str.length());
   } else {
-    std::string errorMsg = "\n*UART SubSystem Error: Message exceeds 100"
+    std::string errorMsg = "*UART SubSystem Error: Message exceeds 100"
                            " character limit*\n";
     send(errorMsg.c_str(), errorMsg.length());
+  }
+}
+
+/*
+ * @brief wrapper for send(char*,uint16) that takes a c-style null-terminated
+ *        character string
+ */
+void UartChSubsys::send(char * str) {
+  send(static_cast<const char*>(str), strlen(str));
+}
+
+void UartChSubsys::send(const char * str) {
+  if (strlen(str) < kMaxMsgLen) {
+    send(str, strlen(str));
+  } else {
+    send("\n*UART SubSystem Error: Message exceeds 100 character limit*\n");
   }
 }
 

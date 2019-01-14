@@ -4,6 +4,7 @@
 
 #include <mutex>
 #include <vector>
+#include <string>
 
 // @TODO make a chibios-subsys common header that includes all
 #include "../../common/Gpio.h"
@@ -58,15 +59,33 @@ class UartChSubsys {
    */
   void addInterface(UartInterface ui);
 
+  /**
+   * @brief Convert a float to a string
+   * @note For now, this just truncates the float
+   * @TODO something something overload constructor
+   */
+  static std::string to_string(float num);
+
   /*
    * @brief wrapper for send(char*,uint16) that takes a char
    */
   void send(char byte);
 
+  void send(float num);
+  void send(int num);
+
   /**
    * @brief C++ style wrapper for send(char*, uint16_t)
    */
   void send(std::string str);
+
+  /*
+   * @brief wrapper for send(char*,uint16) that takes a c-style null-terminated
+   *        character string
+   */
+  void send(char * str);
+
+  void send(const char * str);
 
   /**
    * @brief Queue a TX UART Frame for async transmission
