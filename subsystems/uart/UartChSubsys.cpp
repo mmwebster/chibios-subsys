@@ -19,42 +19,24 @@ std::array<UARTDriver *,4> UartChSubsys::registeredDrivers = {};
 std::array<UartChSubsys *,4> UartChSubsys::driverToSubsysLookup = {};
 
 /**
- * TODO: - Remove driver pointer from constructor
- *       - Add an addInterface function that takes a UartInterface
- *       - set/start interface with default config, add note about
- *         currently only supporting one interface (due to needing
- *         to figure out where to start the config that the driver
- *         needs a pointer to)
- *       - Add private pin mappings for each interface and notes about
- *         which interface uses which pins in the public section
- *         under the addInterface member func
+ * TODO: Add private pin mappings for each interface and notes about
+ *       which interface uses which pins in constructor docs
  * @note: Must use m_uartMut when writing to UART interface
  */
 UartChSubsys::UartChSubsys(EventQueue& eq) : m_eventQueue(eq) {}
 
 /**
- * TODO: Use ui param to determine interface config, even if only one
- *       interface is supported
+ * TODO: Move this logic to the constructor for the new non-singleton
+ *       implementation
  * TODO: Support multiple interfaces -- need event queus and driver
  *       configs for each interface
  * TODO: Implement variable baud
- * TODO: Return a UI handle that contains the driver for the configured
- *       interface as well as a reference to "this" UartChSubsys. In
- *       SomeType::send (maybe UartInterface::send), call send() on the stored
- *       object with the stored driver parameter. This will require adding the
- *       interface-specific transmit to this UartChSubsys class
- * @note Have not as of yet gotten chibios callbacks to work with
- *       subsystem abstractions. Error callbacks should be
- *       implemented.
+ * TODO: Implement the timeout callback w/ proper event generation (may
+ *       only be in a new chibios version)
  */
 void UartChSubsys::addInterface(UartInterface ui) {
   // set default config
   // TODO: Initialize interface pins
-  // TODO: Get UART callbacks working in order to signal the thread
-  //       (read the article on this before continuing with
-  //       implementation). Can also checkout how std::thread
-  //       abstracts on top of pthreads, given that pthreads take a
-  //       void pointer for the function to call
   m_uartConfig = {
     &UartChSubsys::txEmpty,   //txend1,// callback: transmission buffer completely read
                      // by the driver
@@ -135,7 +117,7 @@ void UartChSubsys::send(const char * str) {
 }
 
 /**
- * @TODO optimize with DMA and/or more efficient copies
+ * @TODO optimize with DMA and/or more efficient copies or moves
  */
 void UartChSubsys::send(const char * str, uint16_t len) {
   // start data transmit if interface is ready
@@ -147,9 +129,11 @@ void UartChSubsys::send(const char * str, uint16_t len) {
     uartStopSend(m_uartp);
     uartStartSend(m_uartp, len, m_txBuffer);
   } else {
-    // TODO: This function ideally doesn't affect timing in calling
-    //       thread, having occasional copying of entire block will
-    //       certainly effect timing
+    // @TODO Consider performance of and alternatives to pushing back every byte
+    //       of the passed string one at a time
+    // @TODO Consider what happens if/when the CircularBuffer tx queue runs out
+    //       of space
+
     // otherwise, queue for later
     std::lock_guard<chibios_rt::Mutex> txQueueGuard(m_d3TxQueueMut);
     // push every byte of the string onto the queue
@@ -163,8 +147,6 @@ void UartChSubsys::send(const char * str, uint16_t len) {
 /*
  * @brief subsystem run function for CAN RX called from within a
  *        ChibiOS static thread
- * TODO: Use this thread to generate RX msg events and anything else
- *       that can't always be performed in the static callbacks
  */
 void UartChSubsys::runRxThread() {
   uartStopReceive(m_uartp);
@@ -195,15 +177,22 @@ void UartChSubsys::rxDone(UARTDriver *uartp) {
 
   if (_this != nullptr) {
     // push byte-read event to the subsystem's event consumer
-    // @TODO fix this limit in event generation, limiting RX bytes
-    //       that can be processed by the FSM
+    // @TODO Add support for multi-byte messages (complicated given the
+    //       limits on chibios 32b mailboxes, probably need to abstract
+    //       that with the threading). Actually, could pretty easily make
+    //       Events use a pointer to the multiple-byte message
     Event e = Event(Event::Type::kUartRx, _this->m_rxBuffer[0]);
     // if the event queue cannot be immediately acquired, the push fails
     bool success = _this->m_eventQueue.tryPush(e);
     if (!success) {
-      // @TODO did not immediately acquire lock, must postpone pushing
-      //       the event to the queue until after the callback exits
-      //       (maybe should just always do this)
+
+      // @TODO implement a callback / condition var notified function
+      // that pushes the event to the queue when it frees up but
+      // doesn't block in this thread when the lock on the consumer's
+      // queue can't immediately be acquired
+
+      // @note currently we drop RX bytes on the floor when the consumer
+      //       isn't ready to receive them (this LED toggles)
       palTogglePad(STARTUP_LED_PORT, STARTUP_LED_PIN);
     }
     // start next rx

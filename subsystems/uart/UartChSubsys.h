@@ -18,24 +18,43 @@
  *
  * UART subsystem, sitting on top of the chibios UART driver. Only one
  * subsystem should be instantiated, and currently, only one driver
- * interface (UARTD3 is supported)
+ * interface (UARTD3 is supported). This subsystem is meant to abstract
+ * usage of the ChibiOS UART driver for C++. ChibiOS uses static
+ * functions as callbacks to handle UART interface conditions/events. This
+ * abstraction encapsulates those callbacks into a singleton by defining static
+ * methods on the class for driver-independent callback handling that use a
+ * static lookup table to acquire a reference to "this" and then operate on the
+ * correct UART driver (e.g. &UARTD3) instance
  *
- * @TODO Currently has limited throughput on event generation. This is
- *       possibly due to the fsm (event queue consumer) not being able
- *       to process the events quickly enough, although not sure why
- *       exactly that is causing things to break. The event queue is
- *       built on top of the CircularBuffer class, which should just
- *       overwrite elements when the buffer overflows. Either way,
- *       having a larger, fixed-size packet would improve things
- *       - - - - - - - - - - - - - - - - - - - - 
- *       OH, actually, it's definitely that IF the lock on a shared
- *       resource in one of the static callbacks cannot be immediately
- *       acquired, the kernel gets upset b/c this basically results in
- *       an ISR taking a lifetime to exit. This issue is only likely
- *       to occur at high throughput over serial RX
- *       - - - - - - - - - - - - - - - - - - - - 
- *       Yep, that was it. Now just need a mechanism to postpone event
- *       generation when the lock isn't successfully acquired
+ * @TODO Eventually all chibios subsystem abstractions should be able run
+ *       without user-provided thread run functions. Wrap this entire
+ *       abstraction in a "cal" (ChibiOS Abstraction Layer... heh) namespace
+ *       with standalone class names like cal::Uart
+ *
+ * @TODO Change this class's model from singleton subsystem to one instance per
+ *       UART interface. The original singleton model revolved around needing
+ *       a thread to do "synchronous" UART transmission before I figured out
+ *       the callbacks. Now that callbacks are working, this class can be
+ *       instantiated once for every UART interface instance (with guards
+ *       against instantiating one multiple times) so that they're easier to use
+ *       and keep track of in user code.
+ *
+ *       The new constructor for this class should accept an event queue, a UART
+ *       interface, and (maybe optional) UART config parameters. The config
+ *       params should be a different structure from the ChibiOS one b/c the
+ *       user doesn't need to specify things like callback signatures and (for
+ *       most cases) register values
+ *
+ * @TODO Confirm that the RX char static callback does a try-lock then queues
+ *       the byte for later transmission if not successful. Must do a try
+ *       because we can't block inside a chibios callback (it's basically a
+ *       software interrupt that can starve the kernel). Must queue for later
+ *       to ensure that they do eventually get to the desired event queue
+ *
+ * @TODO Set interface-specific event queues so that this abstraction supports
+ *       multiple multi-producer, single-consumer event/message queues for
+ *       different threads (e.g. Could be running two independent state machines
+ *       that each use a different UART interface for messaging)
  *
  * @note The UART subsystem currently only supports one interface,
  *       which is currently hardcoded to UARTD3. Supporting mutliple
@@ -55,14 +74,13 @@ class UartChSubsys {
 
   /**
    * @brief Add a UART interface to the subsystem
-   * TODO: To support multiple
    */
   void addInterface(UartInterface ui);
 
   /**
    * @brief Convert a float to a string
    * @note For now, this just truncates the float
-   * @TODO something something overload constructor
+   * @TODO move this out of the UART subsystem and into a common utils
    */
   static std::string to_string(float num);
 
@@ -92,30 +110,30 @@ class UartChSubsys {
    * @note The contents of str is immediately copied to memory
    *       allocated by the subsystem instance, and can therefore be
    *       forgotten about after send() exits
-   * TODO: Implement async transmit function, startSend with
-   *       signaling to caller on completion
-   * TODO: Add interface "ui" to send params to specify which
-   *       interface
+   * TODO: Make it UART interface-specific with the new multi-instance UART
+   *       abstraction model
    */
   void send(const char * str, uint16_t len);
 
   /**
    * @brief Inf loop that MUST be called within staticly created thread
-   * TODO: Implement tx thread for async transmit
+   * @TODO Get rid of this run function with the new non-singleton UART
+   *       interface model and call start recv on construction
    */
   void runRxThread();
 
-  // TODO: Make private
   /**
+   * @TODO Make these private and only accessible from within the class
+   *
    * @note below are callbacks used for each interface (currently just
    *       one). They are static so that their signatures match those
    *       required by ChibiOS and are still encapsulated by the class.
    *       To gain access to interface states, static vars are used in
-   *       the class, that are essentially encapsulated globals. These
-   *       globals are necessary because the callbacks do not provide
-   *       an arg for arbitrary data (like the virtual timer
-   *       callbacks), which could otherwise have been used to pass a
-   *       reference to a class instance.
+   *       the class, that are essentially globals encapsulated in this
+   *       class's namespace. These globals are necessary because the
+   *       callbacks do not provide an arg for arbitrary data (like
+   *       the virtual timer callbacks), which could otherwise have
+   *       been used to pass a reference to a class instance.
    */
   // @brief This callback fires when an RX software buffer has been
   //        completely written
