@@ -6,13 +6,16 @@
 #include <vector>
 #include <string>
 
-// @TODO make a chibios-subsys common header that includes all
+// @TODO finish the chibios-subsys common header that includes all (cal.hpp)
+//#include "../../cal.h"
 #include "../../common/Gpio.h"
 #include "../../common/Event.h"
 #include "../../common/EventQueue.h"
 #include "../../common/CircularBuffer.h"
 #include "ch.h"
 #include "hal.h"
+
+namespace cal {
 
 /**
  *
@@ -64,13 +67,13 @@
  *       respective interfaces in the thread run function (and
  *       defining them with the callbacks passed to the config)
  */
-class UartChSubsys {
+class Uart {
  public:
   /**
    * @param eventQueue Reference to queue to send this subsystem's
    *        events to. The event queue notifies itself.
    */
-  UartChSubsys(EventQueue& eq);
+  Uart(EventQueue& eq);
 
   /**
    * @brief Add a UART interface to the subsystem
@@ -148,7 +151,7 @@ class UartChSubsys {
   // @note Since this is a subsystem, it probably shouldn't need or
   //       have multiple instances, but who knows (currently always
   //       returns the single subsys instance)
-  static UartChSubsys *getDriversSubsys(UARTDriver *uartp);
+  static Uart *getDriversSubsys(UARTDriver *uartp);
 
   // Max length of messages in bytes. Anything longer than this many
   // bytes must be broken down into multiple messages
@@ -165,19 +168,19 @@ class UartChSubsys {
    *       corresponding to the callback that was hit
    */
   // contains pointers to all registered UARTDrivers, their index in
-  // this array corresponds to the index of their UartChSubsys pointer
+  // this array corresponds to the index of their Uart pointer
   // in driverToSubsysLookup
   static std::array<UARTDriver *,4> registeredDrivers;
 
   // contains pointers to instances of this class, used for lookup of
   // members from static C-style callbacks
-  static std::array<UartChSubsys *,4> driverToSubsysLookup;
+  static std::array<Uart *,4> driverToSubsysLookup;
 
   // UARTDriver UARTD3 specific fields (need to generalize)
   CircularBuffer<char> m_d3TxQueue{kMaxMsgLen*2};
   chibios_rt::Mutex m_d3TxQueueMut;
   bool m_d3IsReady = true;
-  char m_txBuffer[UartChSubsys::kMaxMsgLen] = {};
+  char m_txBuffer[Uart::kMaxMsgLen] = {};
 
   static constexpr uint8_t kUartOkMask = EVENT_MASK(1);
   static constexpr uint8_t kUartChMask = EVENT_MASK(4);
@@ -187,3 +190,5 @@ class UartChSubsys {
   chibios_rt::Mutex m_uartMut;
   EventQueue& m_eventQueue;
 };
+
+}

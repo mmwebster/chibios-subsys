@@ -4,7 +4,8 @@
 #include <cstring>
 
 // @TODO fix include dirs w/ local Makefile
-#include "../UartChSubsys.h"
+//#include "../../../cal.h"
+#include "../Uart.h"
 #include "../../../common/Event.h"
 #include "../../../common/EventQueue.h"
 #include "ch.hpp"
@@ -22,14 +23,14 @@
 static THD_WORKING_AREA(uartRxThreadFuncWa, 128);
 static THD_FUNCTION(uartRxThreadFunc, arg) {
   chRegSetThreadName("UART RX");
-  static_cast<UartChSubsys*>(arg)->runRxThread();
+  static_cast<cal::Uart*>(arg)->runRxThread();
 }
 
 static THD_WORKING_AREA(timer1Wa, 128);
 static THD_FUNCTION(timer1Func, arg) {
   chRegSetThreadName("Timer 1");
 
-  UartChSubsys* uart = static_cast<UartChSubsys*>(arg);
+  cal::Uart* uart = static_cast<cal::Uart*>(arg);
 
   while (true) {
     uart->send("Timer 1 still alive...\n");
@@ -41,7 +42,7 @@ static THD_WORKING_AREA(timer2Wa, 128);
 static THD_FUNCTION(timer2Func, arg) {
   chRegSetThreadName("Timer 2");
 
-  UartChSubsys* uart = static_cast<UartChSubsys*>(arg);
+  cal::Uart* uart = static_cast<cal::Uart*>(arg);
 
   while (true) {
     uart->send("Timer 2 still alive...\n");
@@ -76,7 +77,7 @@ int main() {
 
   EventQueue fsmEventQueue = EventQueue();
 
-  UartChSubsys uart = UartChSubsys(fsmEventQueue);
+  cal::Uart uart = cal::Uart(fsmEventQueue);
 
   // create thread to drive subsystems
   chThdCreateStatic(uartRxThreadFuncWa, sizeof(uartRxThreadFuncWa), NORMALPRIO,
@@ -97,7 +98,7 @@ int main() {
 
   // try sending a float
   constexpr float my_float = 314.5594;
-  uart.send("Float value is: " + UartChSubsys::to_string(my_float)
+  uart.send("Float value is: " + cal::Uart::to_string(my_float)
       + "\n\n");
 
   // Indicate startup - blink then stay on

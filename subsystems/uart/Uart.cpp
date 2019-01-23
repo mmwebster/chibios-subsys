@@ -1,4 +1,5 @@
-#include "UartChSubsys.h"
+//#include "../../cal.h"
+#include "Uart.h"
 
 #include <mutex>
 #include <cstring>
@@ -15,15 +16,15 @@
 #include "pinconf.h"
 
 // Definitions for static members
-std::array<UARTDriver *,4> UartChSubsys::registeredDrivers = {};
-std::array<UartChSubsys *,4> UartChSubsys::driverToSubsysLookup = {};
+std::array<UARTDriver *,4> cal::Uart::registeredDrivers = {};
+std::array<cal::Uart *,4> cal::Uart::driverToSubsysLookup = {};
 
 /**
  * TODO: Add private pin mappings for each interface and notes about
  *       which interface uses which pins in constructor docs
  * @note: Must use m_uartMut when writing to UART interface
  */
-UartChSubsys::UartChSubsys(EventQueue& eq) : m_eventQueue(eq) {}
+cal::Uart::Uart(EventQueue& eq) : m_eventQueue(eq) {}
 
 /**
  * TODO: Move this logic to the constructor for the new non-singleton
@@ -34,14 +35,14 @@ UartChSubsys::UartChSubsys(EventQueue& eq) : m_eventQueue(eq) {}
  * TODO: Implement the timeout callback w/ proper event generation (may
  *       only be in a new chibios version)
  */
-void UartChSubsys::addInterface(UartInterface ui) {
+void cal::Uart::addInterface(UartInterface ui) {
   // set default config
   // TODO: Initialize interface pins
   m_uartConfig = {
-    &UartChSubsys::txEmpty,   //txend1,// callback: transmission buffer completely read
+    &cal::Uart::txEmpty,   //txend1,// callback: transmission buffer completely read
                      // by the driver
     NULL,   //txend2,// callback: a transmission has physically completed
-    &UartChSubsys::rxDone, // callback: a receive buffer has been
+    &cal::Uart::rxDone, // callback: a receive buffer has been
                                   //completelywritten
     NULL,   //rxchar,// callback: a character is received but the
                      //           application was not ready to receive
@@ -55,10 +56,10 @@ void UartChSubsys::addInterface(UartInterface ui) {
   // set default driver (TODO: make it based on ui)
   m_uartp = &UARTD3;
   // register driver statically on class for lookup in static callbacks
-  UartChSubsys::registeredDrivers[0] = m_uartp;
-    //UartChSubsys::registeredDrivers.size()] = m_uartp;
-  UartChSubsys::driverToSubsysLookup[0] = this;
-      //UartChSubsys::driverToSubsysLookup.size()] = this;
+  cal::Uart::registeredDrivers[0] = m_uartp;
+    //Uart::registeredDrivers.size()] = m_uartp;
+  cal::Uart::driverToSubsysLookup[0] = this;
+      //Uart::driverToSubsysLookup.size()] = this;
   // start interface with default config
   uartStart(m_uartp, &m_uartConfig);
 }
@@ -66,7 +67,7 @@ void UartChSubsys::addInterface(UartInterface ui) {
 /**
  * @brief Convert a float to a string
  */
-std::string UartChSubsys::to_string(float num) {
+std::string cal::Uart::to_string(float num) {
   int num_int = static_cast<int>(num);
   return std::to_string(num_int) + std::string(".X");
 }
@@ -74,15 +75,15 @@ std::string UartChSubsys::to_string(float num) {
 /*
  * @brief wrapper for send(char*,uint16) that takes a char
  */
-void UartChSubsys::send(char byte) {
+void cal::Uart::send(char byte) {
   send(&byte, 1);
 }
 
-void UartChSubsys::send(float num) {
-  send(UartChSubsys::to_string(num));
+void cal::Uart::send(float num) {
+  send(cal::Uart::to_string(num));
 }
 
-void UartChSubsys::send(int num) {
+void cal::Uart::send(int num) {
   send(std::to_string(num));
 }
 
@@ -90,7 +91,7 @@ void UartChSubsys::send(int num) {
 /*
  * @brief wrapper for send(char*,uint16) that takes a std::string
  */
-void UartChSubsys::send(std::string str) {
+void cal::Uart::send(std::string str) {
   if (str.length() < kMaxMsgLen) {
     send(str.c_str(), str.length());
   } else {
@@ -104,11 +105,11 @@ void UartChSubsys::send(std::string str) {
  * @brief wrapper for send(char*,uint16) that takes a c-style null-terminated
  *        character string
  */
-void UartChSubsys::send(char * str) {
+void cal::Uart::send(char * str) {
   send(static_cast<const char*>(str), strlen(str));
 }
 
-void UartChSubsys::send(const char * str) {
+void cal::Uart::send(const char * str) {
   if (strlen(str) < kMaxMsgLen) {
     send(str, strlen(str));
   } else {
@@ -119,7 +120,7 @@ void UartChSubsys::send(const char * str) {
 /**
  * @TODO optimize with DMA and/or more efficient copies or moves
  */
-void UartChSubsys::send(const char * str, uint16_t len) {
+void cal::Uart::send(const char * str, uint16_t len) {
   // start data transmit if interface is ready
   if (m_d3IsReady) {
     m_d3IsReady = false;
@@ -148,7 +149,7 @@ void UartChSubsys::send(const char * str, uint16_t len) {
  * @brief subsystem run function for CAN RX called from within a
  *        ChibiOS static thread
  */
-void UartChSubsys::runRxThread() {
+void cal::Uart::runRxThread() {
   uartStopReceive(m_uartp);
   uartStartReceive(m_uartp, 1, m_rxBuffer);
 
@@ -156,24 +157,24 @@ void UartChSubsys::runRxThread() {
   chThdSleepMilliseconds(1000*60*60*24);
 }
 
-UartChSubsys * UartChSubsys::getDriversSubsys(UARTDriver *uartp) {
-  UartChSubsys *uartChSubsys = nullptr;
+cal::Uart * cal::Uart::getDriversSubsys(UARTDriver *uartp) {
+  cal::Uart *uartChSubsys = nullptr;
 
-  for (uint32_t i = 0; i < UartChSubsys::registeredDrivers.size(); i++) {
-    UARTDriver *_uartp = UartChSubsys::registeredDrivers[i];
+  for (uint32_t i = 0; i < cal::Uart::registeredDrivers.size(); i++) {
+    UARTDriver *_uartp = cal::Uart::registeredDrivers[i];
     if (_uartp == uartp) {
       // found driver's subsys instance
-      uartChSubsys = UartChSubsys::driverToSubsysLookup[i];
+      uartChSubsys = cal::Uart::driverToSubsysLookup[i];
     }
   }
 
   return uartChSubsys;
 }
 
-void UartChSubsys::rxDone(UARTDriver *uartp) {
+void cal::Uart::rxDone(UARTDriver *uartp) {
   // find class pointer corresponding to this uart driver via static
   // lookup table
-  UartChSubsys *_this = UartChSubsys::getDriversSubsys(uartp);
+  cal::Uart *_this = cal::Uart::getDriversSubsys(uartp);
 
   if (_this != nullptr) {
     // push byte-read event to the subsystem's event consumer
@@ -204,12 +205,12 @@ void UartChSubsys::rxDone(UARTDriver *uartp) {
   }
 }
 
-void UartChSubsys::txEmpty(UARTDriver *uartp) {
+void cal::Uart::txEmpty(UARTDriver *uartp) {
   // this is called every time the UART interface finishes copying
   // over bytes from a software-level tx buffer (the one passed to
   // the async start send function)
 
-  UartChSubsys *_this = UartChSubsys::getDriversSubsys(uartp);
+  cal::Uart *_this = cal::Uart::getDriversSubsys(uartp);
 
   // if the queue is non-empty, acquire, copy up to kMaxMsgLen of its
   // content to the output buffer and start a new transmission
