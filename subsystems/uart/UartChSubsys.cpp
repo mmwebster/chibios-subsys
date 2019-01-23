@@ -38,6 +38,11 @@ UartChSubsys::UartChSubsys(EventQueue& eq) : m_eventQueue(eq) {}
  * TODO: Support multiple interfaces -- need event queus and driver
  *       configs for each interface
  * TODO: Implement variable baud
+ * TODO: Return a UI handle that contains the driver for the configured
+ *       interface as well as a reference to "this" UartChSubsys. In
+ *       SomeType::send (maybe UartInterface::send), call send() on the stored
+ *       object with the stored driver parameter. This will require adding the
+ *       interface-specific transmit to this UartChSubsys class
  * @note Have not as of yet gotten chibios callbacks to work with
  *       subsystem abstractions. Error callbacks should be
  *       implemented.
