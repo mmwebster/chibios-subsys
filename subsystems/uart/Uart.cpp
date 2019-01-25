@@ -62,6 +62,11 @@ void cal::Uart::addInterface(UartInterface ui) {
       //Uart::driverToSubsysLookup.size()] = this;
   // start interface with default config
   uartStart(m_uartp, &m_uartConfig);
+
+  // start the receive
+  // @TODO move this to constructor in non-singleton design
+  uartStopReceive(m_uartp);
+  uartStartReceive(m_uartp, 1, m_rxBuffer);
 }
 
 /**
@@ -143,18 +148,6 @@ void cal::Uart::send(const char * str, uint16_t len) {
       m_d3TxQueue.PushBack(*(str + i));
     }
   }
-}
-
-/*
- * @brief subsystem run function for CAN RX called from within a
- *        ChibiOS static thread
- */
-void cal::Uart::runRxThread() {
-  uartStopReceive(m_uartp);
-  uartStartReceive(m_uartp, 1, m_rxBuffer);
-
-  // sleep forever, let callbacks take the wheel
-  chThdSleepMilliseconds(1000*60*60*24);
 }
 
 cal::Uart * cal::Uart::getDriversSubsys(UARTDriver *uartp) {

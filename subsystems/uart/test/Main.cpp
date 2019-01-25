@@ -12,20 +12,6 @@
 #include "hal.h"
 #include "pinconf.h"
 
-/**
- * UART RX subsystem thread
- * @TODO Remove the UART's subsystem thread entirely and see if anything breaks.
- *       Seems as though UART RX could run exclusively on chibios callbacks.
- *       Although, only its workspace is unnecessary overhead b/c the thread
- *       itself goes into a permanent slumber after UART RX startReceive is
- *       called
- */
-static THD_WORKING_AREA(uartRxThreadFuncWa, 128);
-static THD_FUNCTION(uartRxThreadFunc, arg) {
-  chRegSetThreadName("UART RX");
-  static_cast<cal::Uart*>(arg)->runRxThread();
-}
-
 static THD_WORKING_AREA(timer1Wa, 128);
 static THD_FUNCTION(timer1Func, arg) {
   chRegSetThreadName("Timer 1");
@@ -79,9 +65,6 @@ int main() {
 
   cal::Uart uart = cal::Uart(fsmEventQueue);
 
-  // create thread to drive subsystems
-  chThdCreateStatic(uartRxThreadFuncWa, sizeof(uartRxThreadFuncWa), NORMALPRIO,
-      uartRxThreadFunc, &uart);
   // create some timer threads to test mult-thread access (note that at
   // high-frequency and serial throughput these should produce race conditions)
   chThdCreateStatic(timer1Wa, sizeof(timer1Wa), NORMALPRIO,

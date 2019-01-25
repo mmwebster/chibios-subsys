@@ -119,13 +119,6 @@ class Uart {
   void send(const char * str, uint16_t len);
 
   /**
-   * @brief Inf loop that MUST be called within staticly created thread
-   * @TODO Get rid of this run function with the new non-singleton UART
-   *       interface model and call start recv on construction
-   */
-  void runRxThread();
-
-  /**
    * @TODO Make these private and only accessible from within the class
    *
    * @note below are callbacks used for each interface (currently just
