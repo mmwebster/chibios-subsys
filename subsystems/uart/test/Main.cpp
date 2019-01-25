@@ -63,7 +63,8 @@ int main() {
 
   EventQueue fsmEventQueue = EventQueue();
 
-  cal::Uart uart = cal::Uart(fsmEventQueue);
+  // setup a UART interface to immediately begin transmitting and receiving
+  cal::Uart uart = cal::Uart(UartInterface::kD3, fsmEventQueue);
 
   // create some timer threads to test mult-thread access (note that at
   // high-frequency and serial throughput these should produce race conditions)
@@ -71,8 +72,6 @@ int main() {
       timer1Func, &uart);
   chThdCreateStatic(timer2Wa, sizeof(timer2Wa), NORMALPRIO,
       timer2Func, &uart);
-
-  uart.addInterface(UartInterface::kD3);
 
   // test async UART transmit
   uart.send("Valid message\n");

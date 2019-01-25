@@ -22,20 +22,15 @@ std::array<cal::Uart *,4> cal::Uart::driverToSubsysLookup = {};
 /**
  * TODO: Add private pin mappings for each interface and notes about
  *       which interface uses which pins in constructor docs
- * @note: Must use m_uartMut when writing to UART interface
- */
-cal::Uart::Uart(EventQueue& eq) : m_eventQueue(eq) {}
-
-/**
- * TODO: Move this logic to the constructor for the new non-singleton
- *       implementation
  * TODO: Support multiple interfaces -- need event queus and driver
  *       configs for each interface
  * TODO: Implement variable baud
  * TODO: Implement the timeout callback w/ proper event generation (may
  *       only be in a new chibios version)
+ * @note: Must use m_uartMut when writing to UART interface
  */
-void cal::Uart::addInterface(UartInterface ui) {
+cal::Uart::Uart(UartInterface ui, EventQueue& eq) : m_uartInterface(ui),
+  m_eventQueue(eq) {
   // set default config
   // TODO: Initialize interface pins
   m_uartConfig = {
@@ -53,6 +48,7 @@ void cal::Uart::addInterface(UartInterface ui) {
     USART_CR2_LINEN, // Initialization value for the CR2 register.
     0                // Initialization value for the CR3 register.
   };
+
   // set default driver (TODO: make it based on ui)
   m_uartp = &UARTD3;
   // register driver statically on class for lookup in static callbacks

@@ -70,15 +70,14 @@ namespace cal {
 class Uart {
  public:
   /**
+   * @brief Initialize the UART interface instance and IMMEDIATELY begin
+   *        receiving RX byte events in the provided event queue. Can also
+   *        immediately begin sending bytes over the interface.
    * @param eventQueue Reference to queue to send this subsystem's
    *        events to. The event queue notifies itself.
+   * @param ui Desired UART hardware interface to transmit and receive over
    */
-  Uart(EventQueue& eq);
-
-  /**
-   * @brief Add a UART interface to the subsystem
-   */
-  void addInterface(UartInterface ui);
+  Uart(UartInterface ui, EventQueue& eq);
 
   /**
    * @brief Convert a float to a string
@@ -151,6 +150,12 @@ class Uart {
   static constexpr uint32_t kMaxMsgLen = 100;
 
  private:
+  // interface-specific members
+  UartInterface m_uartInterface;
+
+  // interface-wide members (static members facilitating static chibios
+  // callbacks)
+
   /*
    * @note To navigate the ChibiOS constraint of static UART callbacks
    *       with a predefined signature (no arbitrary params), and
