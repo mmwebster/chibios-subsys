@@ -7,7 +7,7 @@
 #include <string>
 
 // @TODO finish the chibios-subsys common header that includes all (cal.hpp)
-//#include "../../cal.h"
+#include "../../cal.h"
 #include "../../common/Gpio.h"
 #include "../../common/Event.h"
 #include "../../common/EventQueue.h"
