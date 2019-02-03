@@ -14,7 +14,9 @@ uTest can be installed manually by cloning the project (https://github.com/mmweb
 
 * `mkdir -p build && cd build`
 * `cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/Toolchain-gcc-arm-none-eabi.cmake -DCMAKE_SYSTEM_PROCESSOR=cortex-m4 -DSEMIHOSTING=OFF -DEXAMPLES=OFF ..`
+* `make install`
 
+__NOTE:__ Currently the project is setup for the utest lib to be installed to /usr/local/. This will be abstracted into a user-specific config in the future.
 
 # Background
 I'm writing this for use in a personal embedded audio project. More on that later.
