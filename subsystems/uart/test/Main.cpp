@@ -2,6 +2,9 @@
 #include <mutex>
 #include <string>
 #include <cstring>
+#include <utest/utest.hpp>
+#include <utest/test_reporter/google_test.hpp>
+#include "UartWriter.h" // UART TestWriter adapter
 
 // @TODO fix include dirs w/ local Makefile
 #include "../Uart.h"
@@ -11,29 +14,8 @@
 #include "hal.h"
 #include "pinconf.h"
 
-static THD_WORKING_AREA(timer1Wa, 128);
-static THD_FUNCTION(timer1Func, arg) {
-  chRegSetThreadName("Timer 1");
-
-  cal::Uart* uart = static_cast<cal::Uart*>(arg);
-
-  while (true) {
-    uart->send("Timer 1 still alive...\n");
-    chThdSleepMilliseconds(500);
-  }
-}
-
-static THD_WORKING_AREA(timer2Wa, 128);
-static THD_FUNCTION(timer2Func, arg) {
-  chRegSetThreadName("Timer 2");
-
-  cal::Uart* uart = static_cast<cal::Uart*>(arg);
-
-  while (true) {
-    uart->send("Timer 2 still alive...\n");
-    chThdSleepMilliseconds(2000);
-  }
-}
+// include the tests here, just to keep main short
+#include "tests.cpp"
 
 int main() {
   /*
@@ -47,11 +29,12 @@ int main() {
   chSysInit();
 
   // Pin initialization
-  // UART TX/RX
-  // TODO: Change to #def'd vars
-  // TODO: Move to UART subsystem
-  palSetPadMode(GPIOC, 10, PAL_MODE_ALTERNATE(7)); // USART3_TX, PAL_MODE_OUTPUT_PUSHPULL
-  palSetPadMode(GPIOC, 11, PAL_MODE_ALTERNATE(7)); // USART3_RX, PAL_MODE_OUTPUT_PUSHPULL
+
+  // TODO: Change to #def'd vars and move to UART subsystem
+  // USART3_TX, PAL_MODE_OUTPUT_PUSHPULL
+  palSetPadMode(GPIOC, 10, PAL_MODE_ALTERNATE(7)); 
+  // USART3_RX, PAL_MODE_OUTPUT_PUSHPULL
+  palSetPadMode(GPIOC, 11, PAL_MODE_ALTERNATE(7)); 
 
   // Digital outputs
   palSetPadMode(STARTUP_LED_PORT, STARTUP_LED_PIN,
@@ -65,14 +48,8 @@ int main() {
   // setup a UART interface to immediately begin transmitting and receiving
   cal::Uart uart = cal::Uart(UartInterface::kD3, fsmEventQueue);
 
-  // create some timer threads to test mult-thread access (note that at
-  // high-frequency and serial throughput these should produce race conditions)
-  chThdCreateStatic(timer1Wa, sizeof(timer1Wa), NORMALPRIO,
-      timer1Func, &uart);
-  chThdCreateStatic(timer2Wa, sizeof(timer2Wa), NORMALPRIO,
-      timer2Func, &uart);
-
   // test async UART transmit
+  // @TODO move these to UART loop-back mode tests with uTest framwork
   uart.send("Valid message\n");
   uart.send("IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII"
             "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIInvalid message!!!\n");
@@ -91,14 +68,35 @@ int main() {
   }
 
   palClearPad(STARTUP_LED_PORT, STARTUP_LED_PIN);
-  chThdSleepMilliseconds(300);
+  chThdSleepMilliseconds(100);
 
+  /**
+   * New uTest Framework code
+   */
+  UartWriter writer(&uart);
+
+  utest::TestWriterReference writers[]{
+    writer
+  };
+
+  utest::test_reporter::GoogleTest google_test{writers};
+
+  utest::TestReporterReference reporters[]{
+    google_test
+  };
+
+  if (utest::TestStatus::PASS == utest::Test(reporters).run().status()) {
+    uart.send("\r\nAll tests PASSED\r\n");
+  } else {
+    uart.send("\r\nTests FAILED\r\n");
+  }
+
+  // transmit back any bytes received over UART
   while (1) {
     // always deplete the queue to help ensure that events are
     // processed faster than they're generated
     while (fsmEventQueue.size() > 0) {
       Event e = fsmEventQueue.pop();
-
 
       if (e.type() == Event::Type::kUartRx) {
         // send received byte back to source (test throughput)

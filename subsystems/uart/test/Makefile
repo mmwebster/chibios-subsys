@@ -224,7 +224,7 @@ UINCDIR =
 ULIBDIR =
 
 # List all user libraries here
-ULIBS = -lm -lrdimon
+ULIBS = -lm -lrdimon -L/usr/local/lib -lutest
 
 #
 # End of user defines
