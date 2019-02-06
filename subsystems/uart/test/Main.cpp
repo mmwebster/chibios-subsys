@@ -5,15 +5,12 @@
 #include <utest/utest.hpp>
 #include <utest/test_reporter/google_test.hpp>
 
+// library common includes
+#include "cal.h"
 // UART TestWriter adapter
 #include "UartWriter.h"
-
 // module under test
 #include "Uart.h"
-
-// library common includes
-#include "Event.h"
-#include "EventQueue.h"
 
 // chibios and target-specific includes
 #include "ch.hpp"

@@ -158,13 +158,16 @@ TCPPSRC =
 ASMSRC =
 ASMXSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
 
+LIB_ROOT = ../../..
+MODULE_ROOT = ..
+
 INCDIR = $(CHIBIOS)/os/license \
          $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) $(CHCPPINC) \
          $(CHIBIOS)/os/hal/lib/streams \
          $(CHIBIOS)/os/various \
-         ../../../common \
-         ..
+         $(LIB_ROOT) \
+         $(MODULE_ROOT)
 
 #
 # Project, sources and paths
