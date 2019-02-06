@@ -28,5 +28,11 @@ uTest can be installed manually by cloning the project (https://github.com/mmweb
 
 __NOTE:__ Currently the project is setup for the utest lib to be installed to /usr/local/. This will be abstracted into a user-specific config in the future.
 
+## GNU ARM Embedded Toolchain
+This project uses `gcc-arm-none-eabi` to build for its embedded ARM Cortex-MX targets. To use this project as-is, you must install this toolchain with your package manager of choice. Most development has been with version `6.2`.
+
+## OpenOCD
+This project uses OpenOCD (On-Chip Debugger) to interface with the ST-Link and In-System Programmer for programming and debugging eval boards and custom PCBs, respectively. To use this project asi-is, you must install this software with your package manager of choice. Most development has been with version `0.10.0`.
+
 # Background
-I'm writing this for use in a personal embedded audio project. More on that later.
+I'm writing this for use in a personal embedded project. More on that later.
