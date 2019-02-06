@@ -16,6 +16,9 @@ static std::string MyStr() {
  *       (GoogleTest) failure(...) member
  * @TODO write actual unit tests for this UART subsystem w/ the interface in
  *       loop-back mode. Requires adding support for an additional driver
+ * @TODO fix duplicate running of TestRunner "g", below. Logs indicate multiple
+ *       registration of the single TestRunner. Also reports running 2x
+ *       TestSuites as there actually are
  */
 static utest::TestRunner g([] (utest::TestSuite& test_suite) {
   test_suite.name("Simple Suite 1").run([] (utest::TestCase& test_case) {
