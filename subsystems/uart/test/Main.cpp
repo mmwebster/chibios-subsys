@@ -4,17 +4,23 @@
 #include <cstring>
 #include <utest/utest.hpp>
 #include <utest/test_reporter/google_test.hpp>
-#include "UartWriter.h" // UART TestWriter adapter
 
-// @TODO fix include dirs w/ local Makefile
-#include "../Uart.h"
-#include "../../../common/Event.h"
-#include "../../../common/EventQueue.h"
+// UART TestWriter adapter
+#include "UartWriter.h"
+
+// module under test
+#include "Uart.h"
+
+// library common includes
+#include "Event.h"
+#include "EventQueue.h"
+
+// chibios and target-specific includes
 #include "ch.hpp"
 #include "hal.h"
 #include "pinconf.h"
 
-// include the tests here, just to keep main short
+// defined test, included here just to keep main short
 #include "tests.cpp"
 
 int main() {

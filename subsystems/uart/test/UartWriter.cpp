@@ -1,6 +1,6 @@
 #include "UartWriter.h"
 
-#include "../Uart.h"
+#include "Uart.h"
 #include "ch.hpp"
 #include "hal.h"
 #include "pinconf.h"

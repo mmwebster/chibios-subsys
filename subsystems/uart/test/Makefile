@@ -162,7 +162,9 @@ INCDIR = $(CHIBIOS)/os/license \
          $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) $(CHCPPINC) \
          $(CHIBIOS)/os/hal/lib/streams \
-         $(CHIBIOS)/os/various
+         $(CHIBIOS)/os/various \
+         ../../../common \
+         ..
 
 #
 # Project, sources and paths
