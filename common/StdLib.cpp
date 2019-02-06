@@ -9,6 +9,7 @@
 
 // @NOTE Not sure what this was here for, but it conflicts with std::string bad
 //       alloc functions
+// @TODO Fix these to get better runtime error reporting over serial/debug
 //namespace std {
 //void __throw_bad_alloc() {
 //#if (HAL_USE_SERIAL == TRUE)
