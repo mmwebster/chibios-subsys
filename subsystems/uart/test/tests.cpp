@@ -24,7 +24,7 @@ static utest::TestRunner g([] (utest::TestSuite& test_suite) {
       utest::TestAssert{p}.equal(MyStr(), std::string("Some String"));
       // utest::TestAssert{p}.fail(); // note assertion reporting broken
     });
-    test_case.name("trivial_case_2").run([] (utest::TestParams& p) {
+    test_case.name("trivial_case_1").run([] (utest::TestParams& p) {
       utest::TestAssert{p}.equal(Trivial(1), 2u);
       utest::TestAssert{p}.equal(MyStr(), std::string("Some String"));
       if (MyStr() != std::string("Some String")) {
